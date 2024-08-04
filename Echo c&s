@@ -1,0 +1,89 @@
+Creating an echo server and client using TCP sockets in Python is a straightforward task. The echo server will receive a message from the client and send the same message back to the client.
+
+Here's how to implement both the echo server and echo client:
+
+### Echo Server
+
+```python
+import socket
+
+def handle_client(client_socket):
+    while True:
+        try:
+            # Receive data from the client
+            data = client_socket.recv(1024)
+            if not data:
+                break
+            print(f"Received: {data.decode('utf-8')}")
+
+            # Send the data back to the client (echo)
+            client_socket.sendall(data)
+        except Exception as e:
+            print(f"Error handling client: {e}")
+            break
+    client_socket.close()
+
+def main():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(("0.0.0.0", 9999))
+    server.listen(5)
+    print("Echo server listening on port 9999")
+
+    while True:
+        client_socket, addr = server.accept()
+        print(f"Accepted connection from {addr}")
+        handle_client(client_socket)
+
+if __name__ == "__main__":
+    main()
+```
+
+### Echo Client
+
+```python
+import socket
+
+def main():
+    # Server IP address and port
+    server_ip = "127.0.0.1"
+    server_port = 9999
+
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((server_ip, server_port))
+
+    try:
+        while True:
+            # Read input from the user
+            message = input("Enter message to send (type 'exit' to quit): ")
+            if message.lower() == 'exit':
+                break
+
+            # Send the message to the server
+            client.sendall(message.encode('utf-8'))
+
+            # Receive the echoed message from the server
+            data = client.recv(1024)
+            print(f"Echoed from server: {data.decode('utf-8')}")
+    except Exception as e:
+        print(f"Error communicating with server: {e}")
+    finally:
+        client.close()
+
+if __name__ == "__main__":
+    main()
+```
+
+### Explanation
+
+#### Echo Server:
+1. **handle_client Function**: Continuously receives data from the client, prints it, and sends it back to the client.
+2. **Main Function**: Sets up the server to listen for incoming connections on port 9999. For each accepted connection, it calls `handle_client` to process the client's requests.
+
+#### Echo Client:
+1. **Main Function**: Connects to the echo server on `127.0.0.1:9999`. Continuously reads input from the user, sends it to the server, and prints the echoed message received from the server. The loop ends when the user types 'exit'.
+
+### Running the Code
+1. **Run the Server**: Start the server script first. It will listen for incoming connections.
+2. **Run the Client**: Start the client script. It will prompt the user to enter messages to send to the server. The server will echo back the messages, and the client will print them. The user can type 'exit' to close the client.
+
+This setup demonstrates a simple echo server and client using TCP sockets in Python.
