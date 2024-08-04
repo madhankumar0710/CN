@@ -1,0 +1,71 @@
+Downloading a webpage using TCP sockets involves manually constructing and sending an HTTP request to the server, then receiving and processing the HTTP response. Below is an example of how to do this in Python.
+
+### Python Code to Download a Webpage Using TCP Sockets
+
+```python
+import socket
+
+def download_webpage(host, port, path):
+    # Create a TCP socket
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    try:
+        # Connect to the server
+        client_socket.connect((host, port))
+        
+        # Construct the HTTP GET request
+        request = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
+        client_socket.send(request.encode('utf-8'))
+
+        # Receive and print the response
+        response = b""
+        while True:
+            chunk = client_socket.recv(4096)
+            if not chunk:
+                break
+            response += chunk
+        
+        # Decode and print the response (for demonstration purposes)
+        response_text = response.decode('utf-8')
+        headers, body = response_text.split("\r\n\r\n", 1)
+        print("Headers:")
+        print(headers)
+        print("\nBody:")
+        print(body)
+    
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    finally:
+        # Close the socket
+        client_socket.close()
+
+if __name__ == "__main__":
+    # Example usage
+    host = "example.com"
+    port = 80
+    path = "/"  # Root path
+    download_webpage(host, port, path)
+```
+
+### Explanation
+
+1. **Create a TCP Socket**: A TCP socket is created using `socket.socket(socket.AF_INET, socket.SOCK_STREAM)`.
+
+2. **Connect to the Server**: The socket connects to the specified host and port (port 80 is used for HTTP).
+
+3. **Construct the HTTP GET Request**: The request string is constructed to ask for the resource at the specified path. It includes HTTP/1.1 headers such as `Host` and `Connection: close` to specify that the server should close the connection after sending the response.
+
+4. **Send the Request**: The request is sent to the server using `client_socket.send(request.encode('utf-8'))`.
+
+5. **Receive the Response**: The response is received in chunks (4096 bytes at a time) until the server closes the connection. This data is accumulated in the `response` variable.
+
+6. **Process the Response**: The response is decoded into a string. It is split into headers and body for printing. In real use cases, you might want to further process or save the body.
+
+7. **Close the Socket**: The socket is closed to free resources.
+
+### Running the Code
+1. Save the script to a file, for example, `download_webpage.py`.
+2. Run the script with Python: `python download_webpage.py`.
+
+This example demonstrates the basics of fetching a webpage using raw TCP sockets and HTTP. For more robust web scraping or handling of different HTTP methods and features, consider using higher-level libraries like `requests` in Python.
