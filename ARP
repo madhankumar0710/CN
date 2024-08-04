@@ -1,96 +1,64 @@
-Sure, here's an example of a socket program to simulate the ARP protocol using TCP sockets in Python. We'll create separate client and server codes. This example simplifies the ARP process, focusing on simulating the protocol's request and reply.
+
 
 ### Server Code (server.py):
 
 ```python
 import socket
 
-# Define server IP and port
-SERVER_IP = '127.0.0.1'
-SERVER_PORT = 65432
-
-# ARP table (IP to MAC address mapping)
+# Define the ARP table
 arp_table = {
-    '192.168.1.1': '00:0b:44:11:3a:b7',
-    '192.168.1.2': '00:0a:95:9d:68:16'
+    "192.168.1.1": "00:0b:44:11:3a:b7",
+    "192.168.1.2": "00:0a:95:9d:68:16"
 }
 
-def handle_client(conn, addr):
-    print(f'Connected by {addr}')
-    while True:
-        # Receive data from the client
-        data = conn.recv(1024)
-        if not data:
-            break
-        # Decode the received IP address
-        ip_address = data.decode()
-        print(f'Received ARP request for IP: {ip_address}')
-        # Look up the MAC address
-        mac_address = arp_table.get(ip_address, 'MAC address not found')
-        # Send the MAC address back to the client
-        conn.sendall(mac_address.encode())
-    conn.close()
+def handle_client(client_socket):
+    request = client_socket.recv(1024).decode('utf-8')
+    print(f"Received ARP request for IP: {request}")
+    
+    response = arp_table.get(request, "MAC not found")
+    client_socket.send(response.encode('utf-8'))
+    client_socket.close()
 
 def main():
-    # Create a TCP/IP socket
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        # Bind the socket to the server IP and port
-        s.bind((SERVER_IP, SERVER_PORT))
-        # Listen for incoming connections
-        s.listen()
-        print('Server is listening...')
-        while True:
-            # Accept a new connection
-            conn, addr = s.accept()
-            handle_client(conn, addr)
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(("0.0.0.0", 9999))
+    server.listen(5)
+    print("Server listening on port 9999")
+    
+    while True:
+        client_socket, addr = server.accept()
+        print(f"Accepted connection from {addr}")
+        handle_client(client_socket)
 
 if __name__ == "__main__":
     main()
 ```
+
+
+//////
 
 ### Client Code (client.py):
 
 ```python
 import socket
 
-# Define server IP and port
-SERVER_IP = '127.0.0.1'
-SERVER_PORT = 65432
-
 def main():
-    # Create a TCP/IP socket
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        # Connect to the server
-        s.connect((SERVER_IP, SERVER_PORT))
-        # Define the IP address for which the MAC address is needed
-        ip_address = '192.168.1.1'
-        # Send the IP address to the server
-        s.sendall(ip_address.encode())
-        # Receive the MAC address from the server
-        data = s.recv(1024)
-        print(f'Received MAC address for {ip_address}: {data.decode()}')
+    server_ip = "127.0.0.1"
+    server_port = 9999
+
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect((server_ip, server_port))
+
+    ip_to_query = "192.168.1.1"
+    print(f"Querying ARP for IP: {ip_to_query}")
+    client.send(ip_to_query.encode('utf-8'))
+
+    response = client.recv(1024).decode('utf-8')
+    print(f"Received ARP response: {response}")
+
+    client.close()
 
 if __name__ == "__main__":
     main()
 ```
 
-### Explanation:
-
-1. **Server Code**:
-   - Creates a TCP server that listens for incoming connections.
-   - Uses an ARP table to map IP addresses to MAC addresses.
-   - Receives an IP address from the client, looks up the corresponding MAC address, and sends it back to the client.
-
-2. **Client Code**:
-   - Creates a TCP client that connects to the server.
-   - Sends an IP address to the server.
-   - Receives the corresponding MAC address from the server and prints it.
-
-### Running the Code:
-
-1. Save the server code in a file named `server.py`.
-2. Save the client code in a file named `client.py`.
-3. Run the server first using the command: `python server.py`.
-4. Run the client using the command: `python client.py`.
-
-The client should connect to the server, send an IP address, receive the corresponding MAC address, and print it.
