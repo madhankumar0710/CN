@@ -1,0 +1,103 @@
+Simulating the ARP protocol using TCP sockets isn't a direct mapping because ARP operates at a lower layer (data link layer) than TCP (transport layer). However, we can create a simplified simulation where clients can request MAC addresses from a server over a TCP connection, which will serve as our ARP server.
+
+Here's a basic example of how you can simulate this with Python using TCP sockets:
+
+### ARP Server (TCP-based)
+```python
+import socket
+import threading
+
+class ARPTable:
+    def __init__(self):
+        self.table = {}
+
+    def add_entry(self, ip, mac):
+        self.table[ip] = mac
+
+    def get_mac(self, ip):
+        return self.table.get(ip, "Not Found")
+
+class ARPServer:
+    def __init__(self, host='localhost', port=12345):
+        self.host = host
+        self.port = port
+        self.arp_table = ARPTable()
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind((self.host, self.port))
+        self.server_socket.listen(5)
+        print(f"ARP server started on {self.host}:{self.port}")
+
+    def handle_client(self, client_socket):
+        while True:
+            try:
+                ip_address = client_socket.recv(1024).decode()
+                if not ip_address:
+                    break
+                print(f"Received ARP request for IP: {ip_address}")
+                mac_address = self.arp_table.get_mac(ip_address)
+                client_socket.send(mac_address.encode())
+            except ConnectionResetError:
+                break
+        client_socket.close()
+
+    def run(self):
+        while True:
+            client_socket, addr = self.server_socket.accept()
+            print(f"Connection from {addr}")
+            client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
+            client_handler.start()
+
+if __name__ == "__main__":
+    server = ARPServer()
+    # Adding some entries to ARP table
+    server.arp_table.add_entry("192.168.1.1", "00:0b:44:11:3a:b7")
+    server.arp_table.add_entry("192.168.1.2", "00:0a:95:9d:68:16")
+    server.run()
+```
+
+### ARP Client (TCP-based)
+```python
+import socket
+
+class ARPClient:
+    def __init__(self, server_ip='localhost', server_port=12345):
+        self.server_ip = server_ip
+        self.server_port = server_port
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client_socket.connect((self.server_ip, self.server_port))
+
+    def request_mac(self, ip_address):
+        self.client_socket.send(ip_address.encode())
+        mac_address = self.client_socket.recv(1024).decode()
+        print(f"MAC address for {ip_address} is {mac_address}")
+
+    def close(self):
+        self.client_socket.close()
+
+if __name__ == "__main__":
+    client = ARPClient()
+    ip_to_query = "192.168.1.1"
+    client.request_mac(ip_to_query)
+    ip_to_query = "192.168.1.2"
+    client.request_mac(ip_to_query)
+    ip_to_query = "192.168.1.3"  # This IP is not in the ARP table
+    client.request_mac(ip_to_query)
+    client.close()
+```
+
+### Explanation:
+1. **ARP Server**:
+    - Creates a server socket that listens for incoming TCP connections.
+    - Maintains an ARP table with mappings of IP addresses to MAC addresses.
+    - Handles each client in a separate thread, responding to ARP requests by looking up the MAC address in the ARP table.
+
+2. **ARP Client**:
+    - Connects to the ARP server using TCP.
+    - Sends IP address queries to the server.
+    - Receives and prints the corresponding MAC address or "Not Found" if the IP is not in the ARP table.
+
+### Running the Simulation:
+1. Start the ARP server by running the `ARPServer` script.
+2. Run the `ARPClient` script to send ARP requests and receive MAC address responses.
+
+This simulation provides a basic understanding of how ARP requests and responses can be handled using TCP sockets in Python.
